@@ -1,6 +1,7 @@
-import { Box, Button, Grid, Typography } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import propTypes from 'prop-types';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ProgressIcon from '@mui/icons-material/HourglassBottom';
 import SnetDialog from '../snet-dialog';
 import ColorCodes from '../../assets/theme/colorCodes';
 import SnetButton from '../snet-button';
@@ -14,7 +15,7 @@ const SnetConversionStatus = ({ link, isDialogOpen, onDialogClose, title, amount
     <SnetDialog isDialogOpen={isDialogOpen} onDialogClose={onDialogClose} title={title} showClosebutton>
       <Grid xs={12} padding={4}>
         <Box paddingY={2} display="flex" alignItems="center">
-          <CheckCircleOutlineIcon color="success" />
+          <ProgressIcon color="warning" />
           <Typography align="center" color="grey" variant="body2" marginLeft={2}>
             Tokens conversion successfully initiated.
           </Typography>

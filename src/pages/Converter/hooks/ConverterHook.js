@@ -3,9 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { isEmpty, round, toUpper } from 'lodash';
 import BigNumber from 'bignumber.js';
 import { getAvailableTokenPairs } from '../../../services/redux/slices/tokenPairs/tokenPairActions';
-import { setFromAddress, setToAddress } from '../../../services/redux/slices/wallet/walletSlice';
-import { errorMessages } from '../../../utils/ConverterConstants';
-import { isValueGreaterThanProvided, isValueLessThanProvided } from '../../../utils/bignumber';
+import { setConversionDirection, setFromAddress, setToAddress } from '../../../services/redux/slices/wallet/walletSlice';
+import { errorMessages, conversionDirections, availableBlockchains } from '../../../utils/ConverterConstants';
+import { convertFromCogs, isValueGreaterThanProvided, isValueLessThanProvided } from '../../../utils/bignumber';
 
 const tokenPairDirection = {
   FROM: 'from_token',
@@ -27,7 +27,7 @@ export const useConverterHook = () => {
   const state = useSelector((state) => state);
   const blockchains = state.blockchains.entities;
   const { tokens } = state.tokenPairs;
-  const { fromAddress, toAddress } = state.wallet;
+  const { wallets } = state.wallet;
 
   const dispatch = useDispatch();
 
@@ -75,23 +75,24 @@ export const useConverterHook = () => {
   const handleFromInputChange = (event) => {
     const { value } = event.target;
 
+    setFromAndToTokenPairs({ ...fromAndToTokenValues, fromValue: value, toValue: value });
+
     const [pair] = tokens.filter((token) => token[tokenPairDirection.FROM].id === fromTokenPair.id);
+
+    const pairMinValue = convertFromCogs(pair.min_value, pair.from_token.allowed_decimal);
+    const pairMaxValue = convertFromCogs(pair.max_value, pair.from_token.allowed_decimal);
 
     if (value <= 0) {
       updateError(errorMessages.INVALID_AMOUNT);
-      // } else if (isValueLessThanProvided(value, pair.min_value)) {
-      //   const minValue = new BigNumber(pair.min_value).toString();
-      //   updateError(errorMessages.MINIMUM_TRANSACTION_AMOUNT + minValue + pair.from_token.symbol);
-      // } else if (isValueGreaterThanProvided(value, pair.max_value)) {
-      //   const maxValue = new BigNumber(pair.max_value).toString();
-      //   updateError(errorMessages.MINIMUM_TRANSACTION_AMOUNT + maxValue + pair.from_token.symbol);
+    } else if (isValueLessThanProvided(value, pairMinValue)) {
+      updateError(errorMessages.MINIMUM_TRANSACTION_AMOUNT + pairMinValue + pair.from_token.symbol);
+    } else if (isValueGreaterThanProvided(value, pairMaxValue)) {
+      updateError(errorMessages.MAXIMUM_TRANSACTION_AMOUNT + pairMaxValue + pair.from_token.symbol);
     } else if (value > walletBalance.balance) {
       updateError(errorMessages.INSUFFICIENT_BALANCE_FROM);
     } else {
       resetError();
     }
-
-    setFromAndToTokenPairs({ ...fromAndToTokenValues, fromValue: value, toValue: value });
   };
 
   const handleToInputChange = (event) => {
@@ -131,6 +132,7 @@ export const useConverterHook = () => {
     setToBlockchains(toBlockchainsWithTokenPairs);
     setFromSelectedBlockchain(fromBlockchainsWithTokenPairs[0]);
     setToSelectedBlockchain(toBlockchainsWithTokenPairs[0]);
+    console.log('fromBlockchainsWithTokenPairs[0]', fromBlockchainsWithTokenPairs[0]);
     setFromTokenPair(fromBlockchainsWithTokenPairs[0].tokenPairs[0]);
     setToTokenPair(toBlockchainsWithTokenPairs[0].tokenPairs[0]);
   };
@@ -142,9 +144,6 @@ export const useConverterHook = () => {
     setToSelectedBlockchain(fromBlockchains[0]);
     setFromTokenPair(toBlockchains[0].tokenPairs[0]);
     setToTokenPair(fromBlockchains[0].tokenPairs[0]);
-
-    dispatch(setFromAddress(toAddress));
-    dispatch(setToAddress(fromAddress));
 
     updateConversionFees();
   };
@@ -174,6 +173,30 @@ export const useConverterHook = () => {
       updateConversionFees();
     }
   }, [fromAndToTokenValues]);
+
+  const detectAndUpdateConversionDirection = () => {
+    if (!isEmpty(fromTokenPair) || !isEmpty(toTokenPair)) {
+      const FROM = fromSelectedBlockchain.symbol;
+      const TO = toSelectedBlockchain.symbol;
+      const direction = `${FROM}_TO_${TO}`;
+      dispatch(setConversionDirection(direction));
+
+      if (!isEmpty(wallets)) {
+        const cardanoAddress = wallets[availableBlockchains.CARDANO];
+        const ethereumAddress = wallets[availableBlockchains.ETHEREUM];
+
+        const fromAddress = direction === conversionDirections.ADA_TO_ETH ? cardanoAddress : ethereumAddress;
+        const toAddress = direction === conversionDirections.ADA_TO_ETH ? ethereumAddress : cardanoAddress;
+
+        dispatch(setFromAddress(fromAddress));
+        dispatch(setToAddress(toAddress));
+      }
+    }
+  };
+
+  useEffect(() => {
+    detectAndUpdateConversionDirection();
+  }, [toSelectedBlockchain, fromSelectedBlockchain]);
 
   return {
     handleFromInputChange,
