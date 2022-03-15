@@ -1,14 +1,14 @@
 const progress = {
   IDLE: 'IDLE',
-  PROCESSING: 'PROCESSING',
-  COMPLETE: 'COMPLETE',
-  ERROR: 'ERROR'
+  PROCESSING: 'Processing',
+  COMPLETE: 'Success',
+  ERROR: 'Error'
 };
 
 export const conversionStatuses = {
-  PROCESSING: 'PROCESSING',
-  USER_INITIATED: 'USER_INITIATED',
-  COMPLETE: 'WAITING_FOR_CLAIM',
+  PROCESSING: 'Processing',
+  USER_INITIATED: 'Processing',
+  COMPLETE: 'Action Required',
   IDLE: 'IDLE'
 };
 

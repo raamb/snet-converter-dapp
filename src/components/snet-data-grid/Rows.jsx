@@ -29,9 +29,9 @@ const Rows = ({ date, fromToken, toToken, fromAddress, toAddress, chainType, sta
   //   };
 
   const availableStatus = {
-    USER_INITIATED: 'USER_INITIATED',
-    SUCCESS: 'SUCCESS',
-    PROCESSING: 'PROCESSING'
+    USER_INITIATED: 'Processing',
+    SUCCESS: 'Success',
+    PROCESSING: 'Processing'
   };
 
   return (
